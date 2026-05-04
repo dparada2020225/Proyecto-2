@@ -47,3 +47,9 @@ CREATE TABLE detalle_venta (
 
 CREATE INDEX idx_producto_categoria ON producto(id_categoria);
 CREATE INDEX idx_venta_cliente ON venta(id_cliente);
+
+CREATE VIEW reporte_ventas AS
+SELECT v.id_venta, SUM(d.cantidad * d.precio_unitario) AS total
+FROM venta v
+JOIN detalle_venta d ON v.id_venta = d.id_venta
+GROUP BY v.id_venta;
