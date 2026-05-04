@@ -15,93 +15,142 @@ export default function Reportes() {
     fetch(`${API}/productos/bajo-stock`).then(r => r.json()).then(setBajoStock)
   }, [])
 
+  const totalGeneral = ventasTotales.reduce((s, v) => s + Number(v.total), 0)
+
   return (
-    <div>
-      <h2>Reportes</h2>
-
-      <div style={styles.seccion}>
-        <h3>Total por Venta (VIEW: reporte_ventas)</h3>
-        <table style={styles.tabla}>
-          <thead>
-            <tr><th>ID Venta</th><th>Total</th></tr>
-          </thead>
-          <tbody>
-            {ventasTotales.map(v => (
-              <tr key={v.id_venta}>
-                <td>{v.id_venta}</td>
-                <td>Q{parseFloat(v.total).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="animate-in">
+      <div className="page-header">
+        <h1 className="page-title">Reportes</h1>
+        <p className="page-subtitle">Análisis de ventas e inventario</p>
       </div>
 
-      <div style={styles.seccion}>
-        <h3>Ventas por Cliente (CTE - WITH)</h3>
-        <table style={styles.tabla}>
-          <thead>
-            <tr><th>ID Venta</th><th>Cliente</th><th>Total</th></tr>
-          </thead>
-          <tbody>
-            {cteVentas.map(v => (
-              <tr key={v.id_venta}>
-                <td>{v.id_venta}</td>
-                <td>{v.cliente}</td>
-                <td>Q{parseFloat(v.total).toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="stats-row">
+        <div className="stat-card">
+          <div className="stat-value">{ventasTotales.length}</div>
+          <div className="stat-label">Ventas totales</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">Q{totalGeneral.toFixed(0)}</div>
+          <div className="stat-label">Ingresos totales</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{clientesFrecuentes.length}</div>
+          <div className="stat-label">Clientes frecuentes</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{bajoStock.filter(p => p.stock < 10).length}</div>
+          <div className="stat-label">Productos críticos</div>
+        </div>
       </div>
 
-      <div style={styles.seccion}>
-        <h3>Clientes Frecuentes (GROUP BY + HAVING)</h3>
-        <table style={styles.tabla}>
-          <thead>
-            <tr><th>Cliente</th><th>Total Ventas</th></tr>
-          </thead>
-          <tbody>
-            {clientesFrecuentes.map((c, i) => (
-              <tr key={i}>
-                <td>{c.nombre}</td>
-                <td>{c.total_ventas}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* VIEW */}
+      <div className="report-section">
+        <div className="report-section-header">
+          <div className="report-section-title">Total por Venta</div>
+          <span className="report-section-tag">VIEW</span>
+          <code style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace' }}>reporte_ventas</code>
+        </div>
+        <div className="report-section-body">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID Venta</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                {ventasTotales.map(v => (
+                  <tr key={v.id_venta}>
+                    <td className="td-id">#{v.id_venta}</td>
+                    <td><span className="badge badge-purple">Q{Number(v.total).toFixed(2)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <div style={styles.seccion}>
-        <h3>Productos con Bajo Stock (Subquery)</h3>
-        <table style={styles.tabla}>
-          <thead>
-            <tr><th>Producto</th><th>Stock</th></tr>
-          </thead>
-          <tbody>
-            {bajoStock.map((p, i) => (
-              <tr key={i}>
-                <td>{p.nombre}</td>
-                <td style={{ color: p.stock < 10 ? '#e25555' : '#333' }}>{p.stock}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* CTE */}
+      <div className="report-section">
+        <div className="report-section-header">
+          <div className="report-section-title">Ventas por Cliente</div>
+          <span className="report-section-tag">CTE — WITH</span>
+        </div>
+        <div className="report-section-body">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID Venta</th><th>Cliente</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                {cteVentas.map(v => (
+                  <tr key={v.id_venta}>
+                    <td className="td-id">#{v.id_venta}</td>
+                    <td style={{ fontWeight: 500 }}>{v.cliente}</td>
+                    <td><span className="badge badge-orange">Q{Number(v.total).toFixed(2)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* GROUP BY + HAVING */}
+      <div className="report-section">
+        <div className="report-section-header">
+          <div className="report-section-title">Clientes Frecuentes</div>
+          <span className="report-section-tag">GROUP BY + HAVING</span>
+        </div>
+        <div className="report-section-body">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Cliente</th><th>Total Ventas</th></tr>
+              </thead>
+              <tbody>
+                {clientesFrecuentes.map((c, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                    <td>
+                      <span className="badge badge-purple">{c.total_ventas} ventas</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* SUBQUERY */}
+      <div className="report-section">
+        <div className="report-section-header">
+          <div className="report-section-title">Productos con Bajo Stock</div>
+          <span className="report-section-tag">Subquery</span>
+          <code style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace' }}>stock &lt; AVG(stock)</code>
+        </div>
+        <div className="report-section-body">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Producto</th><th>Stock</th></tr>
+              </thead>
+              <tbody>
+                {bajoStock.map((p, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 500 }}>{p.nombre}</td>
+                    <td>
+                      <span className={`badge ${p.stock < 10 ? 'badge-red' : 'badge-orange'}`}>
+                        {p.stock}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  seccion: {
-    marginBottom: '36px',
-    background: '#f9f9f9',
-    padding: '16px',
-    borderRadius: '8px',
-    borderLeft: '4px solid #1e1e2e'
-  },
-  tabla: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '14px'
-  }
 }

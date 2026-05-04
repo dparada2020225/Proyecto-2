@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import Productos from './pages/Productos'
 import Clientes from './pages/Clientes'
 import Ventas from './pages/Ventas'
@@ -7,14 +7,16 @@ import Reportes from './pages/Reportes'
 export default function App() {
   return (
     <BrowserRouter>
-      <nav style={styles.nav}>
-        <span style={styles.brand}>🛒 Tienda</span>
-        <Link style={styles.link} to="/">Productos</Link>
-        <Link style={styles.link} to="/clientes">Clientes</Link>
-        <Link style={styles.link} to="/ventas">Ventas</Link>
-        <Link style={styles.link} to="/reportes">Reportes</Link>
+      <nav>
+        <div className="nav-brand">
+          🛒 <span>Tienda</span>
+        </div>
+        <NavLink to="/" end>Productos</NavLink>
+        <NavLink to="/clientes">Clientes</NavLink>
+        <NavLink to="/ventas">Ventas</NavLink>
+        <NavLink to="/reportes">Reportes</NavLink>
       </nav>
-      <div style={styles.container}>
+      <div className="page">
         <Routes>
           <Route path="/" element={<Productos />} />
           <Route path="/clientes" element={<Clientes />} />
@@ -24,29 +26,4 @@ export default function App() {
       </div>
     </BrowserRouter>
   )
-}
-
-const styles = {
-  nav: {
-    background: '#1e1e2e',
-    padding: '12px 24px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '24px',
-  },
-  brand: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: '20px',
-    marginRight: 'auto',
-  },
-  link: {
-    color: '#cdd6f4',
-    textDecoration: 'none',
-    fontSize: '15px',
-  },
-  container: {
-    padding: '24px',
-    fontFamily: 'sans-serif',
-  }
 }

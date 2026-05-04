@@ -25,8 +25,7 @@ export default function Productos() {
   }
 
   const handleSubmit = async () => {
-    setError('')
-    setMensaje('')
+    setError(''); setMensaje('')
     if (!form.nombre || !form.precio || !form.stock || !form.id_categoria || !form.id_proveedor) {
       setError('Todos los campos son obligatorios')
       return
@@ -40,7 +39,7 @@ export default function Productos() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); return }
-    setMensaje(editId ? 'Producto actualizado' : 'Producto creado')
+    setMensaje(editId ? 'Producto actualizado correctamente' : 'Producto creado correctamente')
     setForm({ nombre: '', precio: '', stock: '', id_categoria: '', id_proveedor: '' })
     setEditId(null)
     cargarProductos()
@@ -49,8 +48,8 @@ export default function Productos() {
   const handleEditar = (p) => {
     setEditId(p.id_producto)
     setForm({ nombre: p.nombre, precio: p.precio, stock: p.stock, id_categoria: p.id_categoria, id_proveedor: p.id_proveedor })
-    setError('')
-    setMensaje('')
+    setError(''); setMensaje('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEliminar = async (id) => {
@@ -62,70 +61,109 @@ export default function Productos() {
     cargarProductos()
   }
 
+  const cancelar = () => {
+    setEditId(null)
+    setForm({ nombre: '', precio: '', stock: '', id_categoria: '', id_proveedor: '' })
+    setError(''); setMensaje('')
+  }
+
   return (
-    <div>
-      <h2>Productos</h2>
-
-      {error && <div style={styles.error}>{error}</div>}
-      {mensaje && <div style={styles.ok}>{mensaje}</div>}
-
-      <div style={styles.form}>
-        <h3>{editId ? 'Editar Producto' : 'Nuevo Producto'}</h3>
-        <input style={styles.input} placeholder="Nombre" value={form.nombre}
-          onChange={e => setForm({ ...form, nombre: e.target.value })} />
-        <input style={styles.input} placeholder="Precio" type="number" value={form.precio}
-          onChange={e => setForm({ ...form, precio: e.target.value })} />
-        <input style={styles.input} placeholder="Stock" type="number" value={form.stock}
-          onChange={e => setForm({ ...form, stock: e.target.value })} />
-        <select style={styles.input} value={form.id_categoria}
-          onChange={e => setForm({ ...form, id_categoria: e.target.value })}>
-          <option value="">-- Categoría --</option>
-          {categorias.map(c => <option key={c.id_categoria} value={c.id_categoria}>{c.nombre}</option>)}
-        </select>
-        <select style={styles.input} value={form.id_proveedor}
-          onChange={e => setForm({ ...form, id_proveedor: e.target.value })}>
-          <option value="">-- Proveedor --</option>
-          {proveedores.map(p => <option key={p.id_proveedor} value={p.id_proveedor}>{p.nombre}</option>)}
-        </select>
-        <button style={styles.btn} onClick={handleSubmit}>{editId ? 'Actualizar' : 'Crear'}</button>
-        {editId && <button style={styles.btnGris} onClick={() => { setEditId(null); setForm({ nombre: '', precio: '', stock: '', id_categoria: '', id_proveedor: '' }) }}>Cancelar</button>}
+    <div className="animate-in">
+      <div className="page-header">
+        <h1 className="page-title">Productos</h1>
+        <p className="page-subtitle">Gestión de inventario y catálogo</p>
       </div>
 
-      <table style={styles.tabla}>
-        <thead>
-          <tr>
-            <th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Categoría</th><th>Proveedor</th><th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {productos.map(p => (
-            <tr key={p.id_producto}>
-              <td>{p.id_producto}</td>
-              <td>{p.nombre}</td>
-              <td>Q{p.precio}</td>
-              <td>{p.stock}</td>
-              <td>{p.categoria}</td>
-              <td>{p.proveedor}</td>
-              <td>
-                <button style={styles.btnSm} onClick={() => handleEditar(p)}>Editar</button>
-                <button style={styles.btnRojo} onClick={() => handleEliminar(p.id_producto)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="stats-row">
+        <div className="stat-card">
+          <div className="stat-value">{productos.length}</div>
+          <div className="stat-label">Total productos</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{categorias.length}</div>
+          <div className="stat-label">Categorías</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{productos.filter(p => p.stock < 10).length}</div>
+          <div className="stat-label">Stock bajo</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{productos.reduce((s, p) => s + Number(p.stock), 0)}</div>
+          <div className="stat-label">Unidades totales</div>
+        </div>
+      </div>
+
+      {error && <div className="alert alert-error">⚠ {error}</div>}
+      {mensaje && <div className="alert alert-success">✓ {mensaje}</div>}
+
+      <div className="card">
+        <div className="card-title">{editId ? '✏ Editar producto' : '＋ Nuevo producto'}</div>
+        <div className="form-row">
+          <input placeholder="Nombre del producto" value={form.nombre}
+            onChange={e => setForm({ ...form, nombre: e.target.value })} />
+          <input placeholder="Precio (Q)" type="number" value={form.precio}
+            onChange={e => setForm({ ...form, precio: e.target.value })} style={{ maxWidth: 130 }} />
+          <input placeholder="Stock" type="number" value={form.stock}
+            onChange={e => setForm({ ...form, stock: e.target.value })} style={{ maxWidth: 110 }} />
+          <select value={form.id_categoria}
+            onChange={e => setForm({ ...form, id_categoria: e.target.value })}>
+            <option value="">-- Categoría --</option>
+            {categorias.map(c => <option key={c.id_categoria} value={c.id_categoria}>{c.nombre}</option>)}
+          </select>
+          <select value={form.id_proveedor}
+            onChange={e => setForm({ ...form, id_proveedor: e.target.value })}>
+            <option value="">-- Proveedor --</option>
+            {proveedores.map(p => <option key={p.id_proveedor} value={p.id_proveedor}>{p.nombre}</option>)}
+          </select>
+          <button className="btn btn-primary" onClick={handleSubmit}>
+            {editId ? 'Actualizar' : 'Crear producto'}
+          </button>
+          {editId && (
+            <button className="btn btn-ghost" onClick={cancelar}>Cancelar</button>
+          )}
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 0 }}>
+        <div className="card-title" style={{ padding: '20px 24px 0' }}>Catálogo de productos (JOIN)</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Categoría</th>
+                <th>Proveedor</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productos.map(p => (
+                <tr key={p.id_producto}>
+                  <td className="td-id">#{p.id_producto}</td>
+                  <td style={{ fontWeight: 500 }}>{p.nombre}</td>
+                  <td><span className="badge badge-purple">Q{Number(p.precio).toFixed(2)}</span></td>
+                  <td>
+                    <span className={`badge ${p.stock < 10 ? 'badge-red' : 'badge-orange'}`}>
+                      {p.stock}
+                    </span>
+                  </td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.categoria}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.proveedor}</td>
+                  <td>
+                    <div className="td-actions">
+                      <button className="btn btn-sm btn-edit" onClick={() => handleEditar(p)}>Editar</button>
+                      <button className="btn btn-sm btn-delete" onClick={() => handleEliminar(p.id_producto)}>Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
-}
-
-const styles = {
-  form: { background: '#f5f5f5', padding: '16px', borderRadius: '8px', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' },
-  input: { padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' },
-  btn: { padding: '8px 16px', background: '#1e1e2e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  btnGris: { padding: '8px 16px', background: '#888', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  btnSm: { padding: '4px 10px', background: '#4a90e2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '4px' },
-  btnRojo: { padding: '4px 10px', background: '#e25555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  tabla: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
-  error: { background: '#fdd', border: '1px solid #e25555', padding: '10px', borderRadius: '4px', marginBottom: '12px', color: '#c00' },
-  ok: { background: '#dfd', border: '1px solid #4caf50', padding: '10px', borderRadius: '4px', marginBottom: '12px', color: '#2a7a2a' },
 }

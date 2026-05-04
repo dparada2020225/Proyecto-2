@@ -23,8 +23,7 @@ export default function Clientes() {
   }
 
   const handleSubmit = async () => {
-    setError('')
-    setMensaje('')
+    setError(''); setMensaje('')
     if (!form.nombre || !form.correo) {
       setError('Nombre y correo son obligatorios')
       return
@@ -38,7 +37,7 @@ export default function Clientes() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); return }
-    setMensaje(editId ? 'Cliente actualizado' : 'Cliente creado')
+    setMensaje(editId ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente')
     setForm({ nombre: '', correo: '' })
     setEditId(null)
     cargarClientes()
@@ -48,8 +47,8 @@ export default function Clientes() {
   const handleEditar = (c) => {
     setEditId(c.id_cliente)
     setForm({ nombre: c.nombre, correo: c.correo })
-    setError('')
-    setMensaje('')
+    setError(''); setMensaje('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEliminar = async (id) => {
@@ -61,68 +60,108 @@ export default function Clientes() {
     cargarClientes()
   }
 
+  const cancelar = () => {
+    setEditId(null)
+    setForm({ nombre: '', correo: '' })
+    setError(''); setMensaje('')
+  }
+
   return (
-    <div>
-      <h2>Clientes</h2>
-
-      {error && <div style={styles.error}>{error}</div>}
-      {mensaje && <div style={styles.ok}>{mensaje}</div>}
-
-      <div style={styles.form}>
-        <h3>{editId ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
-        <input style={styles.input} placeholder="Nombre" value={form.nombre}
-          onChange={e => setForm({ ...form, nombre: e.target.value })} />
-        <input style={styles.input} placeholder="Correo" value={form.correo}
-          onChange={e => setForm({ ...form, correo: e.target.value })} />
-        <button style={styles.btn} onClick={handleSubmit}>{editId ? 'Actualizar' : 'Crear'}</button>
-        {editId && <button style={styles.btnGris} onClick={() => { setEditId(null); setForm({ nombre: '', correo: '' }) }}>Cancelar</button>}
+    <div className="animate-in">
+      <div className="page-header">
+        <h1 className="page-title">Clientes</h1>
+        <p className="page-subtitle">Registro y gestión de clientes</p>
       </div>
 
-      <table style={styles.tabla}>
-        <thead>
-          <tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Acciones</th></tr>
-        </thead>
-        <tbody>
-          {clientes.map(c => (
-            <tr key={c.id_cliente}>
-              <td>{c.id_cliente}</td>
-              <td>{c.nombre}</td>
-              <td>{c.correo}</td>
-              <td>
-                <button style={styles.btnSm} onClick={() => handleEditar(c)}>Editar</button>
-                <button style={styles.btnRojo} onClick={() => handleEliminar(c.id_cliente)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="stats-row">
+        <div className="stat-card">
+          <div className="stat-value">{clientes.length}</div>
+          <div className="stat-label">Total clientes</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{conVentas.length}</div>
+          <div className="stat-label">Con compras</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{clientes.length - conVentas.length}</div>
+          <div className="stat-label">Sin compras</div>
+        </div>
+      </div>
 
-      <h3 style={{ marginTop: '32px' }}>Clientes con ventas registradas (Subquery)</h3>
-      <table style={styles.tabla}>
-        <thead>
-          <tr><th>Nombre</th><th>Correo</th></tr>
-        </thead>
-        <tbody>
-          {conVentas.map((c, i) => (
-            <tr key={i}>
-              <td>{c.nombre}</td>
-              <td>{c.correo}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {error && <div className="alert alert-error">⚠ {error}</div>}
+      {mensaje && <div className="alert alert-success">✓ {mensaje}</div>}
+
+      <div className="card">
+        <div className="card-title">{editId ? '✏ Editar cliente' : '＋ Nuevo cliente'}</div>
+        <div className="form-row">
+          <input placeholder="Nombre completo" value={form.nombre}
+            onChange={e => setForm({ ...form, nombre: e.target.value })} style={{ minWidth: 200 }} />
+          <input placeholder="Correo electrónico" value={form.correo}
+            onChange={e => setForm({ ...form, correo: e.target.value })} style={{ minWidth: 220 }} />
+          <button className="btn btn-primary" onClick={handleSubmit}>
+            {editId ? 'Actualizar' : 'Crear cliente'}
+          </button>
+          {editId && (
+            <button className="btn btn-ghost" onClick={cancelar}>Cancelar</button>
+          )}
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 0 }}>
+        <div className="card-title" style={{ padding: '20px 24px 0' }}>Todos los clientes</div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clientes.map(c => (
+                <tr key={c.id_cliente}>
+                  <td className="td-id">#{c.id_cliente}</td>
+                  <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{c.correo}</td>
+                  <td>
+                    <div className="td-actions">
+                      <button className="btn btn-sm btn-edit" onClick={() => handleEditar(c)}>Editar</button>
+                      <button className="btn btn-sm btn-delete" onClick={() => handleEliminar(c.id_cliente)}>Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 0 }}>
+        <div className="card-title" style={{ padding: '20px 24px 0' }}>
+          Clientes con ventas registradas
+          <span className="badge badge-purple" style={{ fontSize: 11, marginLeft: 8 }}>Subquery IN</span>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {conVentas.map((c, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{c.correo}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
-}
-
-const styles = {
-  form: { background: '#f5f5f5', padding: '16px', borderRadius: '8px', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' },
-  input: { padding: '8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '14px' },
-  btn: { padding: '8px 16px', background: '#1e1e2e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  btnGris: { padding: '8px 16px', background: '#888', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  btnSm: { padding: '4px 10px', background: '#4a90e2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '4px' },
-  btnRojo: { padding: '4px 10px', background: '#e25555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  tabla: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
-  error: { background: '#fdd', border: '1px solid #e25555', padding: '10px', borderRadius: '4px', marginBottom: '12px', color: '#c00' },
-  ok: { background: '#dfd', border: '1px solid #4caf50', padding: '10px', borderRadius: '4px', marginBottom: '12px', color: '#2a7a2a' },
 }
