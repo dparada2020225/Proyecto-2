@@ -479,3 +479,19 @@ tbody td {
   color: var(--text-dim);
   font-size: 14px;
 }
+
+/* NAV USER */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.nav-username {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}

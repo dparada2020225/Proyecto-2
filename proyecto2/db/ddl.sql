@@ -45,11 +45,24 @@ CREATE TABLE detalle_venta (
     precio_unitario NUMERIC(10,2)
 );
 
+-- Tabla de usuarios para autenticación
+CREATE TABLE usuario (
+    id_usuario SERIAL PRIMARY KEY,
+    nombre     VARCHAR(100) NOT NULL,
+    usuario    VARCHAR(50)  NOT NULL UNIQUE,
+    password_hash TEXT      NOT NULL
+);
+
 CREATE INDEX idx_producto_categoria ON producto(id_categoria);
-CREATE INDEX idx_venta_cliente ON venta(id_cliente);
+CREATE INDEX idx_venta_cliente      ON venta(id_cliente);
 
 CREATE VIEW reporte_ventas AS
 SELECT v.id_venta, SUM(d.cantidad * d.precio_unitario) AS total
 FROM venta v
 JOIN detalle_venta d ON v.id_venta = d.id_venta
 GROUP BY v.id_venta;
+
+-- Usuario admin por defecto: admin / admin123
+-- Hash generado con bcrypt rounds=10
+INSERT INTO usuario (nombre, usuario, password_hash) VALUES
+('Administrador', 'admin', '$2b$10$MRB9jXG2pKK0l429bT7PNOfHkhr5G6JWIpd3EhfAsPogs5h5dQ/Qq');

@@ -2,17 +2,37 @@ import { useEffect, useState } from 'react'
 
 const API = 'http://localhost:3001/api'
 
+// ── CSV helper ────────────────────────────────────────────
+function exportarCSV(datos, nombreArchivo, columnas) {
+  const encabezado = columnas.map(c => c.label).join(',')
+  const filas = datos.map(row =>
+    columnas.map(c => {
+      const val = row[c.key] ?? ''
+      // Escapar comas y comillas
+      return `"${String(val).replace(/"/g, '""')}"`
+    }).join(',')
+  )
+  const csv     = [encabezado, ...filas].join('\n')
+  const blob    = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url     = URL.createObjectURL(blob)
+  const link    = document.createElement('a')
+  link.href     = url
+  link.download = nombreArchivo
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function Reportes() {
-  const [ventasTotales, setVentasTotales] = useState([])
-  const [cteVentas, setCteVentas] = useState([])
-  const [clientesFrecuentes, setClientesFrecuentes] = useState([])
-  const [bajoStock, setBajoStock] = useState([])
+  const [ventasTotales,       setVentasTotales]       = useState([])
+  const [cteVentas,           setCteVentas]           = useState([])
+  const [clientesFrecuentes,  setClientesFrecuentes]  = useState([])
+  const [bajoStock,           setBajoStock]           = useState([])
 
   useEffect(() => {
-    fetch(`${API}/reportes/ventas-totales`).then(r => r.json()).then(setVentasTotales)
-    fetch(`${API}/reportes/cte-ventas`).then(r => r.json()).then(setCteVentas)
-    fetch(`${API}/reportes/clientes-frecuentes`).then(r => r.json()).then(setClientesFrecuentes)
-    fetch(`${API}/productos/bajo-stock`).then(r => r.json()).then(setBajoStock)
+    fetch(`${API}/reportes/ventas-totales`, { credentials: 'include' }).then(r => r.json()).then(setVentasTotales)
+    fetch(`${API}/reportes/cte-ventas`,     { credentials: 'include' }).then(r => r.json()).then(setCteVentas)
+    fetch(`${API}/reportes/clientes-frecuentes`, { credentials: 'include' }).then(r => r.json()).then(setClientesFrecuentes)
+    fetch(`${API}/productos/bajo-stock`,    { credentials: 'include' }).then(r => r.json()).then(setBajoStock)
   }, [])
 
   const totalGeneral = ventasTotales.reduce((s, v) => s + Number(v.total), 0)
@@ -48,24 +68,31 @@ export default function Reportes() {
         <div className="report-section-header">
           <div className="report-section-title">Total por Venta</div>
           <span className="report-section-tag">VIEW</span>
-          <code style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace' }}>reporte_ventas</code>
+          <code style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace' }}>reporte_ventas</code>
+          <button
+            className="btn btn-sm btn-ghost"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => exportarCSV(
+              ventasTotales,
+              'reporte_ventas.csv',
+              [{ label: 'ID Venta', key: 'id_venta' }, { label: 'Total (Q)', key: 'total' }]
+            )}
+          >
+            ⬇ Exportar CSV
+          </button>
         </div>
-        <div className="report-section-body">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>ID Venta</th><th>Total</th></tr>
-              </thead>
-              <tbody>
-                {ventasTotales.map(v => (
-                  <tr key={v.id_venta}>
-                    <td className="td-id">#{v.id_venta}</td>
-                    <td><span className="badge badge-purple">Q{Number(v.total).toFixed(2)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>ID Venta</th><th>Total</th></tr></thead>
+            <tbody>
+              {ventasTotales.map(v => (
+                <tr key={v.id_venta}>
+                  <td className="td-id">#{v.id_venta}</td>
+                  <td><span className="badge badge-purple">Q{Number(v.total).toFixed(2)}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -74,24 +101,31 @@ export default function Reportes() {
         <div className="report-section-header">
           <div className="report-section-title">Ventas por Cliente</div>
           <span className="report-section-tag">CTE — WITH</span>
+          <button
+            className="btn btn-sm btn-ghost"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => exportarCSV(
+              cteVentas,
+              'ventas_por_cliente.csv',
+              [{ label: 'ID Venta', key: 'id_venta' }, { label: 'Cliente', key: 'cliente' }, { label: 'Total (Q)', key: 'total' }]
+            )}
+          >
+            ⬇ Exportar CSV
+          </button>
         </div>
-        <div className="report-section-body">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>ID Venta</th><th>Cliente</th><th>Total</th></tr>
-              </thead>
-              <tbody>
-                {cteVentas.map(v => (
-                  <tr key={v.id_venta}>
-                    <td className="td-id">#{v.id_venta}</td>
-                    <td style={{ fontWeight: 500 }}>{v.cliente}</td>
-                    <td><span className="badge badge-orange">Q{Number(v.total).toFixed(2)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>ID Venta</th><th>Cliente</th><th>Total</th></tr></thead>
+            <tbody>
+              {cteVentas.map(v => (
+                <tr key={v.id_venta}>
+                  <td className="td-id">#{v.id_venta}</td>
+                  <td style={{ fontWeight: 500 }}>{v.cliente}</td>
+                  <td><span className="badge badge-orange">Q{Number(v.total).toFixed(2)}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -100,25 +134,30 @@ export default function Reportes() {
         <div className="report-section-header">
           <div className="report-section-title">Clientes Frecuentes</div>
           <span className="report-section-tag">GROUP BY + HAVING</span>
+          <button
+            className="btn btn-sm btn-ghost"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => exportarCSV(
+              clientesFrecuentes,
+              'clientes_frecuentes.csv',
+              [{ label: 'Cliente', key: 'nombre' }, { label: 'Total Ventas', key: 'total_ventas' }]
+            )}
+          >
+            ⬇ Exportar CSV
+          </button>
         </div>
-        <div className="report-section-body">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Cliente</th><th>Total Ventas</th></tr>
-              </thead>
-              <tbody>
-                {clientesFrecuentes.map((c, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 500 }}>{c.nombre}</td>
-                    <td>
-                      <span className="badge badge-purple">{c.total_ventas} ventas</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Cliente</th><th>Total Ventas</th></tr></thead>
+            <tbody>
+              {clientesFrecuentes.map((c, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                  <td><span className="badge badge-purple">{c.total_ventas} ventas</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -127,28 +166,31 @@ export default function Reportes() {
         <div className="report-section-header">
           <div className="report-section-title">Productos con Bajo Stock</div>
           <span className="report-section-tag">Subquery</span>
-          <code style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace' }}>stock &lt; AVG(stock)</code>
+          <code style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace' }}>stock &lt; AVG(stock)</code>
+          <button
+            className="btn btn-sm btn-ghost"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => exportarCSV(
+              bajoStock,
+              'bajo_stock.csv',
+              [{ label: 'Producto', key: 'nombre' }, { label: 'Stock', key: 'stock' }]
+            )}
+          >
+            ⬇ Exportar CSV
+          </button>
         </div>
-        <div className="report-section-body">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Producto</th><th>Stock</th></tr>
-              </thead>
-              <tbody>
-                {bajoStock.map((p, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 500 }}>{p.nombre}</td>
-                    <td>
-                      <span className={`badge ${p.stock < 10 ? 'badge-red' : 'badge-orange'}`}>
-                        {p.stock}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Producto</th><th>Stock</th></tr></thead>
+            <tbody>
+              {bajoStock.map((p, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500 }}>{p.nombre}</td>
+                  <td><span className={`badge ${p.stock < 10 ? 'badge-red' : 'badge-orange'}`}>{p.stock}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

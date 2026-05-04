@@ -1,40 +1,34 @@
 import { useEffect, useState } from 'react'
 
 const API = 'http://localhost:3001/api'
+const OPT = { credentials: 'include' }
 
 export default function Ventas() {
-  const [ventas, setVentas] = useState([])
-  const [clientes, setClientes] = useState([])
+  const [ventas,    setVentas]    = useState([])
+  const [clientes,  setClientes]  = useState([])
   const [empleados, setEmpleados] = useState([])
   const [productos, setProductos] = useState([])
   const [detalle, setDetalle] = useState([{ id_producto: '', cantidad: '', precio_unitario: '' }])
   const [form, setForm] = useState({ id_cliente: '', id_empleado: '' })
-  const [error, setError] = useState('')
+  const [error,   setError]   = useState('')
   const [mensaje, setMensaje] = useState('')
-  const [detalleVenta, setDetalleVenta] = useState(null)
-  const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
+  const [detalleVenta,     setDetalleVenta]     = useState(null)
+  const [ventaSeleccionada,setVentaSeleccionada]= useState(null)
 
   useEffect(() => {
     cargarVentas()
-    fetch(`${API}/clientes`).then(r => r.json()).then(setClientes)
-    fetch(`${API}/ventas/empleados`).then(r => r.json()).then(setEmpleados)
-    fetch(`${API}/productos`).then(r => r.json()).then(setProductos)
+    fetch(`${API}/clientes`, OPT).then(r => r.json()).then(setClientes)
+    fetch(`${API}/ventas/empleados`, OPT).then(r => r.json()).then(setEmpleados)
+    fetch(`${API}/productos`, OPT).then(r => r.json()).then(setProductos)
   }, [])
 
   const cargarVentas = () => {
-    fetch(`${API}/ventas`)
-      .then(r => r.json())
-      .then(setVentas)
+    fetch(`${API}/ventas`, OPT).then(r => r.json()).then(setVentas)
       .catch(() => setError('Error al cargar ventas'))
   }
 
-  const agregarLinea = () => {
-    setDetalle([...detalle, { id_producto: '', cantidad: '', precio_unitario: '' }])
-  }
-
-  const eliminarLinea = (i) => {
-    setDetalle(detalle.filter((_, idx) => idx !== i))
-  }
+  const agregarLinea  = () => setDetalle([...detalle, { id_producto: '', cantidad: '', precio_unitario: '' }])
+  const eliminarLinea = (i) => setDetalle(detalle.filter((_, idx) => idx !== i))
 
   const handleDetalleChange = (i, campo, valor) => {
     const nuevo = [...detalle]
@@ -48,19 +42,9 @@ export default function Ventas() {
 
   const handleSubmit = async () => {
     setError(''); setMensaje('')
-    if (!form.id_cliente || !form.id_empleado) {
-      setError('Selecciona cliente y empleado')
-      return
-    }
-    if (detalle.some(d => !d.id_producto || !d.cantidad)) {
-      setError('Completa todos los productos del detalle')
-      return
-    }
-    const res = await fetch(`${API}/ventas`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, detalle })
-    })
+    if (!form.id_cliente || !form.id_empleado) { setError('Selecciona cliente y empleado'); return }
+    if (detalle.some(d => !d.id_producto || !d.cantidad)) { setError('Completa todos los productos'); return }
+    const res  = await fetch(`${API}/ventas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ ...form, detalle }) })
     const data = await res.json()
     if (!res.ok) { setError(data.error); return }
     setMensaje(`Venta #${data.id_venta} registrada correctamente`)
@@ -71,14 +55,12 @@ export default function Ventas() {
 
   const verDetalle = async (id) => {
     setVentaSeleccionada(id)
-    const res = await fetch(`${API}/ventas/${id}/detalle`)
+    const res  = await fetch(`${API}/ventas/${id}/detalle`, OPT)
     const data = await res.json()
     setDetalleVenta(data)
   }
 
-  const subtotalDetalle = detalleVenta
-    ? detalleVenta.reduce((s, d) => s + Number(d.subtotal), 0)
-    : 0
+  const subtotalDetalle = detalleVenta ? detalleVenta.reduce((s, d) => s + Number(d.subtotal), 0) : 0
 
   return (
     <div className="animate-in">
@@ -88,34 +70,22 @@ export default function Ventas() {
       </div>
 
       <div className="stats-row">
-        <div className="stat-card">
-          <div className="stat-value">{ventas.length}</div>
-          <div className="stat-label">Total ventas</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{clientes.length}</div>
-          <div className="stat-label">Clientes</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{empleados.length}</div>
-          <div className="stat-label">Empleados</div>
-        </div>
+        <div className="stat-card"><div className="stat-value">{ventas.length}</div><div className="stat-label">Total ventas</div></div>
+        <div className="stat-card"><div className="stat-value">{clientes.length}</div><div className="stat-label">Clientes</div></div>
+        <div className="stat-card"><div className="stat-value">{empleados.length}</div><div className="stat-label">Empleados</div></div>
       </div>
 
-      {error && <div className="alert alert-error">⚠ {error}</div>}
+      {error   && <div className="alert alert-error">⚠ {error}</div>}
       {mensaje && <div className="alert alert-success">✓ {mensaje}</div>}
 
       <div className="card">
         <div className="card-title">＋ Nueva venta</div>
-
         <div className="form-row" style={{ marginBottom: 20 }}>
-          <select value={form.id_cliente}
-            onChange={e => setForm({ ...form, id_cliente: e.target.value })}>
+          <select value={form.id_cliente} onChange={e => setForm({ ...form, id_cliente: e.target.value })}>
             <option value="">-- Cliente --</option>
             {clientes.map(c => <option key={c.id_cliente} value={c.id_cliente}>{c.nombre}</option>)}
           </select>
-          <select value={form.id_empleado}
-            onChange={e => setForm({ ...form, id_empleado: e.target.value })}>
+          <select value={form.id_empleado} onChange={e => setForm({ ...form, id_empleado: e.target.value })}>
             <option value="">-- Empleado --</option>
             {empleados.map(e => <option key={e.id_empleado} value={e.id_empleado}>{e.nombre}</option>)}
           </select>
@@ -127,22 +97,13 @@ export default function Ventas() {
 
         {detalle.map((d, i) => (
           <div key={i} className="detail-line">
-            <select value={d.id_producto} style={{ flex: 2 }}
-              onChange={e => handleDetalleChange(i, 'id_producto', e.target.value)}>
+            <select value={d.id_producto} style={{ flex: 2 }} onChange={e => handleDetalleChange(i, 'id_producto', e.target.value)}>
               <option value="">-- Producto --</option>
-              {productos.map(p => (
-                <option key={p.id_producto} value={p.id_producto}>
-                  {p.nombre} (stock: {p.stock})
-                </option>
-              ))}
+              {productos.map(p => <option key={p.id_producto} value={p.id_producto}>{p.nombre} (stock: {p.stock})</option>)}
             </select>
-            <input placeholder="Cantidad" type="number" value={d.cantidad} style={{ maxWidth: 100 }}
-              onChange={e => handleDetalleChange(i, 'cantidad', e.target.value)} />
-            <input placeholder="Precio unit." type="number" value={d.precio_unitario} style={{ maxWidth: 120 }}
-              onChange={e => handleDetalleChange(i, 'precio_unitario', e.target.value)} />
-            {detalle.length > 1 && (
-              <button className="btn btn-sm btn-delete" onClick={() => eliminarLinea(i)}>✕</button>
-            )}
+            <input placeholder="Cantidad" type="number" value={d.cantidad} style={{ maxWidth: 100 }} onChange={e => handleDetalleChange(i, 'cantidad', e.target.value)} />
+            <input placeholder="Precio unit." type="number" value={d.precio_unitario} style={{ maxWidth: 120 }} onChange={e => handleDetalleChange(i, 'precio_unitario', e.target.value)} />
+            {detalle.length > 1 && <button className="btn btn-sm btn-delete" onClick={() => eliminarLinea(i)}>✕</button>}
           </div>
         ))}
 
@@ -159,15 +120,7 @@ export default function Ventas() {
         </div>
         <div className="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>Empleado</th>
-                <th>Detalle</th>
-              </tr>
-            </thead>
+            <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Empleado</th><th>Detalle</th></tr></thead>
             <tbody>
               {ventas.map(v => (
                 <tr key={v.id_venta}>
@@ -175,9 +128,7 @@ export default function Ventas() {
                   <td style={{ color: 'var(--text-muted)' }}>{new Date(v.fecha).toLocaleDateString('es-GT')}</td>
                   <td style={{ fontWeight: 500 }}>{v.cliente}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{v.empleado}</td>
-                  <td>
-                    <button className="btn btn-sm btn-view" onClick={() => verDetalle(v.id_venta)}>Ver</button>
-                  </td>
+                  <td><button className="btn btn-sm btn-view" onClick={() => verDetalle(v.id_venta)}>Ver</button></td>
                 </tr>
               ))}
             </tbody>
@@ -190,14 +141,7 @@ export default function Ventas() {
           <div className="modal-title">Detalle de Venta #{ventaSeleccionada}</div>
           <div className="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Cantidad</th>
-                  <th>Precio Unit.</th>
-                  <th>Subtotal</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead>
               <tbody>
                 {detalleVenta.map((d, i) => (
                   <tr key={i}>
@@ -209,9 +153,7 @@ export default function Ventas() {
                 ))}
                 <tr>
                   <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-muted)', paddingTop: 12 }}>TOTAL</td>
-                  <td style={{ paddingTop: 12 }}>
-                    <span className="badge badge-purple" style={{ fontSize: 14 }}>Q{subtotalDetalle.toFixed(2)}</span>
-                  </td>
+                  <td style={{ paddingTop: 12 }}><span className="badge badge-purple" style={{ fontSize: 14 }}>Q{subtotalDetalle.toFixed(2)}</span></td>
                 </tr>
               </tbody>
             </table>
