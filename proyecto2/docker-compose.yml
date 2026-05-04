@@ -14,7 +14,7 @@ services:
       - ./db/ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql
       - ./db/scriptDatos.sql:/docker-entrypoint-initdb.d/02_datos.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
