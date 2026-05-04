@@ -78,6 +78,11 @@ INSERT INTO venta (id_cliente, id_empleado) VALUES
 (16,16),(17,17),(18,18),(19,19),(20,20),
 (21,21),(22,22),(23,23),(24,24),(25,25);
 
+-- Ventas adicionales para que GROUP BY + HAVING retorne resultados visibles
+-- (clientes 1, 2, 3, 5 y 10 tendrán 2 ventas cada uno)
+INSERT INTO venta (id_cliente, id_empleado) VALUES
+(1,2),(2,3),(3,1),(5,4),(10,6);
+
 -- DETALLE_VENTA
 INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES
 (1,1,1,800),(2,2,2,20),(3,3,1,35),(4,4,2,25),(5,5,3,15),
@@ -85,3 +90,11 @@ INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VAL
 (11,11,2,55),(12,12,5,5),(13,13,1,20),(14,14,1,120),(15,15,1,70),
 (16,16,2,40),(17,17,1,22),(18,18,3,18),(19,19,10,2),(20,20,2,8),
 (21,21,1,300),(22,22,1,75),(23,23,2,40),(24,24,1,500),(25,25,1,150);
+
+-- Detalles para las ventas adicionales (ids 26-30)
+INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES
+(26,2,1,20),
+(27,3,2,35),
+(28,9,1,45),
+(29,5,3,15),
+(30,10,1,60);
