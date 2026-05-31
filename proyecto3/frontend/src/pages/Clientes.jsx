@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../App'
+import { puedeMutar, puedeEliminar } from '../permisos'
 
 const API = 'http://localhost:3001/api'
 const OPT = { credentials: 'include' }
 
 export default function Clientes() {
+  const { usuario } = useAuth()
+  const rol = usuario?.rol
+  const puedeEditar    = puedeMutar(rol, 'clientes')
+  const puedeEliminarC = puedeEliminar(rol, 'clientes')
+
   const [clientes,  setClientes]  = useState([])
   const [conVentas, setConVentas] = useState([])
   const [form, setForm] = useState({ nombre: '', correo: '' })
@@ -66,33 +73,43 @@ export default function Clientes() {
       {error   && <div className="alert alert-error">⚠ {error}</div>}
       {mensaje && <div className="alert alert-success">✓ {mensaje}</div>}
 
-      <div className="card">
-        <div className="card-title">{editId ? '✏ Editar cliente' : '＋ Nuevo cliente'}</div>
-        <div className="form-row">
-          <input placeholder="Nombre completo" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} style={{ minWidth: 200 }} />
-          <input placeholder="Correo electrónico" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} style={{ minWidth: 220 }} />
-          <button className="btn btn-primary" onClick={handleSubmit}>{editId ? 'Actualizar' : 'Crear cliente'}</button>
-          {editId && <button className="btn btn-ghost" onClick={cancelar}>Cancelar</button>}
+      {/* Formulario solo para roles con permiso de edición */}
+      {puedeEditar && (
+        <div className="card">
+          <div className="card-title">{editId ? '✏ Editar cliente' : '＋ Nuevo cliente'}</div>
+          <div className="form-row">
+            <input placeholder="Nombre completo" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} style={{ minWidth: 200 }} />
+            <input placeholder="Correo electrónico" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} style={{ minWidth: 220 }} />
+            <button className="btn btn-primary" onClick={handleSubmit}>{editId ? 'Actualizar' : 'Crear cliente'}</button>
+            {editId && <button className="btn btn-ghost" onClick={cancelar}>Cancelar</button>}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card" style={{ padding: 0 }}>
         <div className="card-title" style={{ padding: '20px 24px 0' }}>Todos los clientes</div>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Acciones</th></tr></thead>
+            <thead>
+              <tr>
+                <th>ID</th><th>Nombre</th><th>Correo</th>
+                {(puedeEditar || puedeEliminarC) && <th>Acciones</th>}
+              </tr>
+            </thead>
             <tbody>
               {clientes.map(c => (
                 <tr key={c.id_cliente}>
                   <td className="td-id">#{c.id_cliente}</td>
                   <td style={{ fontWeight: 500 }}>{c.nombre}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{c.correo}</td>
-                  <td>
-                    <div className="td-actions">
-                      <button className="btn btn-sm btn-edit" onClick={() => handleEditar(c)}>Editar</button>
-                      <button className="btn btn-sm btn-delete" onClick={() => handleEliminar(c.id_cliente)}>Eliminar</button>
-                    </div>
-                  </td>
+                  {(puedeEditar || puedeEliminarC) && (
+                    <td>
+                      <div className="td-actions">
+                        {puedeEditar    && <button className="btn btn-sm btn-edit"   onClick={() => handleEditar(c)}>Editar</button>}
+                        {puedeEliminarC && <button className="btn btn-sm btn-delete" onClick={() => handleEliminar(c.id_cliente)}>Eliminar</button>}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

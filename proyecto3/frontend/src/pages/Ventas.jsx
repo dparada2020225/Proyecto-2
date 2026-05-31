@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../App'
+import { puedeMutar } from '../permisos'
 
 const API = 'http://localhost:3001/api'
 const OPT = { credentials: 'include' }
 
 export default function Ventas() {
+  const { usuario } = useAuth()
+  const puedeCrear = puedeMutar(usuario?.rol, 'ventas')
+
   const [ventas,    setVentas]    = useState([])
   const [clientes,  setClientes]  = useState([])
   const [empleados, setEmpleados] = useState([])
@@ -78,40 +83,43 @@ export default function Ventas() {
       {error   && <div className="alert alert-error">⚠ {error}</div>}
       {mensaje && <div className="alert alert-success">✓ {mensaje}</div>}
 
-      <div className="card">
-        <div className="card-title">＋ Nueva venta</div>
-        <div className="form-row" style={{ marginBottom: 20 }}>
-          <select value={form.id_cliente} onChange={e => setForm({ ...form, id_cliente: e.target.value })}>
-            <option value="">-- Cliente --</option>
-            {clientes.map(c => <option key={c.id_cliente} value={c.id_cliente}>{c.nombre}</option>)}
-          </select>
-          <select value={form.id_empleado} onChange={e => setForm({ ...form, id_empleado: e.target.value })}>
-            <option value="">-- Empleado --</option>
-            {empleados.map(e => <option key={e.id_empleado} value={e.id_empleado}>{e.nombre}</option>)}
-          </select>
-        </div>
-
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 10 }}>
-          Detalle de productos
-        </div>
-
-        {detalle.map((d, i) => (
-          <div key={i} className="detail-line">
-            <select value={d.id_producto} style={{ flex: 2 }} onChange={e => handleDetalleChange(i, 'id_producto', e.target.value)}>
-              <option value="">-- Producto --</option>
-              {productos.map(p => <option key={p.id_producto} value={p.id_producto}>{p.nombre} (stock: {p.stock})</option>)}
+      {/* Formulario solo para roles con permiso de crear ventas */}
+      {puedeCrear && (
+        <div className="card">
+          <div className="card-title">＋ Nueva venta</div>
+          <div className="form-row" style={{ marginBottom: 20 }}>
+            <select value={form.id_cliente} onChange={e => setForm({ ...form, id_cliente: e.target.value })}>
+              <option value="">-- Cliente --</option>
+              {clientes.map(c => <option key={c.id_cliente} value={c.id_cliente}>{c.nombre}</option>)}
             </select>
-            <input placeholder="Cantidad" type="number" value={d.cantidad} style={{ maxWidth: 100 }} onChange={e => handleDetalleChange(i, 'cantidad', e.target.value)} />
-            <input placeholder="Precio unit." type="number" value={d.precio_unitario} style={{ maxWidth: 120 }} onChange={e => handleDetalleChange(i, 'precio_unitario', e.target.value)} />
-            {detalle.length > 1 && <button className="btn btn-sm btn-delete" onClick={() => eliminarLinea(i)}>✕</button>}
+            <select value={form.id_empleado} onChange={e => setForm({ ...form, id_empleado: e.target.value })}>
+              <option value="">-- Empleado --</option>
+              {empleados.map(e => <option key={e.id_empleado} value={e.id_empleado}>{e.nombre}</option>)}
+            </select>
           </div>
-        ))}
 
-        <div className="form-row" style={{ marginTop: 14 }}>
-          <button className="btn btn-ghost" onClick={agregarLinea}>+ Agregar producto</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Registrar venta</button>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 10 }}>
+            Detalle de productos
+          </div>
+
+          {detalle.map((d, i) => (
+            <div key={i} className="detail-line">
+              <select value={d.id_producto} style={{ flex: 2 }} onChange={e => handleDetalleChange(i, 'id_producto', e.target.value)}>
+                <option value="">-- Producto --</option>
+                {productos.map(p => <option key={p.id_producto} value={p.id_producto}>{p.nombre} (stock: {p.stock})</option>)}
+              </select>
+              <input placeholder="Cantidad" type="number" value={d.cantidad} style={{ maxWidth: 100 }} onChange={e => handleDetalleChange(i, 'cantidad', e.target.value)} />
+              <input placeholder="Precio unit." type="number" value={d.precio_unitario} style={{ maxWidth: 120 }} onChange={e => handleDetalleChange(i, 'precio_unitario', e.target.value)} />
+              {detalle.length > 1 && <button className="btn btn-sm btn-delete" onClick={() => eliminarLinea(i)}>✕</button>}
+            </div>
+          ))}
+
+          <div className="form-row" style={{ marginTop: 14 }}>
+            <button className="btn btn-ghost" onClick={agregarLinea}>+ Agregar producto</button>
+            <button className="btn btn-primary" onClick={handleSubmit}>Registrar venta</button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card" style={{ padding: 0 }}>
         <div className="card-title" style={{ padding: '20px 24px 0' }}>
