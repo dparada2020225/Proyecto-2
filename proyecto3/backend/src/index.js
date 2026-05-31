@@ -5,11 +5,12 @@ const pgSession = require('connect-pg-simple')(session);
 const pool = require('./db');
 const { sequelize } = require('./orm');
 
-const productosRouter = require('./routes/productos');
-const clientesRouter  = require('./routes/clientes');
-const ventasRouter    = require('./routes/ventas');
-const reportesRouter  = require('./routes/reportes');
-const authRouter      = require('./routes/auth');
+const productosRouter      = require('./routes/productos');
+const clientesRouter       = require('./routes/clientes');
+const ventasRouter         = require('./routes/ventas');
+const reportesRouter       = require('./routes/reportes');
+const authRouter           = require('./routes/auth');
+const procedimientosRouter = require('./routes/procedimientos');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -36,11 +37,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/api/auth',      authRouter);
-app.use('/api/productos', productosRouter);
-app.use('/api/clientes',  clientesRouter);
-app.use('/api/ventas',    ventasRouter);
-app.use('/api/reportes',  reportesRouter);
+app.use('/api/auth',           authRouter);
+app.use('/api/productos',      productosRouter);
+app.use('/api/clientes',       clientesRouter);
+app.use('/api/ventas',         ventasRouter);
+app.use('/api/reportes',       reportesRouter);
+app.use('/api/procedimientos', procedimientosRouter);
 
 // Conectar ORM (sin sincronizar esquema — el DDL ya lo maneja Docker)
 sequelize.authenticate()
