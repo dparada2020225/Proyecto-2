@@ -1,100 +1,92 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const { sequelize, Venta, DetalleVenta, Cliente, Empleado, Producto } = require('../orm');
 
-// GET todas las ventas con cliente y empleado (JOIN)
+// GET todas las ventas con cliente y empleado (ORM)
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT v.id_venta, v.fecha,
-             c.nombre AS cliente,
-             e.nombre AS empleado
-      FROM venta v
-      JOIN cliente c ON v.id_cliente = c.id_cliente
-      JOIN empleado e ON v.id_empleado = e.id_empleado
-      ORDER BY v.id_venta DESC
-    `);
-    res.json(result.rows);
+    const ventas = await Venta.findAll({
+      include: [
+        { model: Cliente,  attributes: ['nombre'] },
+        { model: Empleado, attributes: ['nombre'] },
+      ],
+      order: [['id_venta', 'DESC']],
+    });
+    const result = ventas.map(v => ({
+      id_venta: v.id_venta,
+      fecha:    v.fecha,
+      cliente:  v.cliente?.nombre,
+      empleado: v.empleado?.nombre,
+    }));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET detalle de una venta con productos (JOIN)
+// GET detalle de una venta con productos (ORM)
 router.get('/:id/detalle', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(`
-      SELECT v.id_venta, p.nombre AS producto,
-             d.cantidad, d.precio_unitario,
-             (d.cantidad * d.precio_unitario) AS subtotal
-      FROM detalle_venta d
-      JOIN producto p ON d.id_producto = p.id_producto
-      JOIN venta v ON d.id_venta = v.id_venta
-      WHERE v.id_venta = $1
-    `, [id]);
-    res.json(result.rows);
+    const detalles = await DetalleVenta.findAll({
+      where: { id_venta: id },
+      include: [{ model: Producto, attributes: ['nombre'] }],
+    });
+    const result = detalles.map(d => ({
+      id_venta:        d.id_venta,
+      producto:        d.producto?.nombre,
+      cantidad:        d.cantidad,
+      precio_unitario: d.precio_unitario,
+      subtotal:        d.cantidad * d.precio_unitario,
+    }));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET empleados (para el formulario)
+// GET empleados (ORM)
 router.get('/empleados', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM empleado ORDER BY nombre');
-    res.json(result.rows);
+    const empleados = await Empleado.findAll({ order: [['nombre', 'ASC']] });
+    res.json(empleados);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST crear venta con detalle (Transacción explícita)
+// POST crear venta con detalle (transacción explícita con ORM)
 router.post('/', async (req, res) => {
   const { id_cliente, id_empleado, detalle } = req.body;
-  // detalle = [{ id_producto, cantidad, precio_unitario }, ...]
 
-  const client = await pool.connect();
+  const t = await sequelize.transaction();
   try {
-    await client.query('BEGIN');
-
     // Insertar venta
-    const ventaResult = await client.query(
-      `INSERT INTO venta (id_cliente, id_empleado)
-       VALUES ($1, $2) RETURNING id_venta`,
-      [id_cliente, id_empleado]
-    );
-    const id_venta = ventaResult.rows[0].id_venta;
+    const venta = await Venta.create({ id_cliente, id_empleado }, { transaction: t });
 
     // Insertar cada detalle y descontar stock
     for (const item of detalle) {
-      await client.query(
-        `INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario)
-         VALUES ($1, $2, $3, $4)`,
-        [id_venta, item.id_producto, item.cantidad, item.precio_unitario]
-      );
+      await DetalleVenta.create({
+        id_venta:        venta.id_venta,
+        id_producto:     item.id_producto,
+        cantidad:        item.cantidad,
+        precio_unitario: item.precio_unitario,
+      }, { transaction: t });
 
       // Descontar stock
-      const stockResult = await client.query(
-        `UPDATE producto SET stock = stock - $1
-         WHERE id_producto = $2 AND stock >= $1
-         RETURNING stock`,
-        [item.cantidad, item.id_producto]
-      );
-
-      if (stockResult.rows.length === 0) {
+      const producto = await Producto.findByPk(item.id_producto, { transaction: t });
+      if (!producto || producto.stock < item.cantidad) {
         throw new Error(`Stock insuficiente para producto id ${item.id_producto}`);
       }
+      await producto.update({ stock: producto.stock - item.cantidad }, { transaction: t });
     }
 
-    await client.query('COMMIT');
-    res.status(201).json({ mensaje: 'Venta registrada', id_venta });
+    await t.commit();
+    res.status(201).json({ mensaje: 'Venta registrada', id_venta: venta.id_venta });
 
   } catch (err) {
-    await client.query('ROLLBACK');
+    await t.rollback();
     res.status(400).json({ error: err.message });
-  } finally {
-    client.release();
   }
 });
 
