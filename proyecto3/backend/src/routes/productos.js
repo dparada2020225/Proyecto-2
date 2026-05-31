@@ -1,24 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { Producto, Categoria, Proveedor } = require('../orm');
 
-// GET todos los productos con categoria y proveedor (JOIN)
+// GET todos los productos con categoria y proveedor (ORM)
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT p.id_producto, p.nombre, p.precio, p.stock,
-             c.nombre AS categoria, pr.nombre AS proveedor
-      FROM producto p
-      JOIN categoria c ON p.id_categoria = c.id_categoria
-      JOIN proveedor pr ON p.id_proveedor = pr.id_proveedor
-    `);
-    res.json(result.rows);
+    const productos = await Producto.findAll({
+      include: [
+        { model: Categoria, attributes: ['nombre'] },
+        { model: Proveedor, attributes: ['nombre'] },
+      ],
+    });
+    const result = productos.map(p => ({
+      id_producto: p.id_producto,
+      nombre:      p.nombre,
+      precio:      p.precio,
+      stock:       p.stock,
+      id_categoria: p.id_categoria,
+      id_proveedor: p.id_proveedor,
+      categoria:   p.categorium?.nombre,
+      proveedor:   p.proveedor?.nombre,
+    }));
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET productos con stock menor al promedio (Subquery)
+// GET productos con stock menor al promedio (SQL explícito — subquery avanzada)
 router.get('/bajo-stock', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -33,68 +43,61 @@ router.get('/bajo-stock', async (req, res) => {
   }
 });
 
-// POST crear producto
-router.post('/', async (req, res) => {
-  const { nombre, precio, stock, id_categoria, id_proveedor } = req.body;
+// GET categorias (ORM)
+router.get('/categorias', async (req, res) => {
   try {
-    const result = await pool.query(
-      `INSERT INTO producto (nombre, precio, stock, id_categoria, id_proveedor)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [nombre, precio, stock, id_categoria, id_proveedor]
-    );
-    res.status(201).json(result.rows[0]);
+    const cats = await Categoria.findAll({ order: [['nombre', 'ASC']] });
+    res.json(cats);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT actualizar producto
+// GET proveedores (ORM)
+router.get('/proveedores', async (req, res) => {
+  try {
+    const provs = await Proveedor.findAll({ order: [['nombre', 'ASC']] });
+    res.json(provs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST crear producto (ORM)
+router.post('/', async (req, res) => {
+  const { nombre, precio, stock, id_categoria, id_proveedor } = req.body;
+  try {
+    const producto = await Producto.create({ nombre, precio, stock, id_categoria, id_proveedor });
+    res.status(201).json(producto);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT actualizar producto (ORM)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, precio, stock, id_categoria, id_proveedor } = req.body;
   try {
-    const result = await pool.query(
-      `UPDATE producto SET nombre=$1, precio=$2, stock=$3,
-       id_categoria=$4, id_proveedor=$5
-       WHERE id_producto=$6 RETURNING *`,
-      [nombre, precio, stock, id_categoria, id_proveedor, id]
+    const [updated] = await Producto.update(
+      { nombre, precio, stock, id_categoria, id_proveedor },
+      { where: { id_producto: id } }
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json(result.rows[0]);
+    if (!updated) return res.status(404).json({ error: 'Producto no encontrado' });
+    const producto = await Producto.findByPk(id);
+    res.json(producto);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE eliminar producto
+// DELETE eliminar producto (ORM)
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(
-      'DELETE FROM producto WHERE id_producto=$1 RETURNING *', [id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+    const deleted = await Producto.destroy({ where: { id_producto: id } });
+    if (!deleted) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json({ mensaje: 'Producto eliminado' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET categorias (para el formulario)
-router.get('/categorias', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM categoria ORDER BY nombre');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET proveedores (para el formulario)
-router.get('/proveedores', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM proveedor ORDER BY nombre');
-    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

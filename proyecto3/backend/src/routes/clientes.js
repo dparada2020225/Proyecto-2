@@ -1,20 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { Cliente } = require('../orm');
 
-// GET todos los clientes
+// GET todos los clientes (ORM)
 router.get('/', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT * FROM cliente ORDER BY id_cliente
-    `);
-    res.json(result.rows);
+    const clientes = await Cliente.findAll({ order: [['id_cliente', 'ASC']] });
+    res.json(clientes);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET clientes que tienen al menos una venta (Subquery con IN)
+// GET clientes que tienen al menos una venta (SQL explícito — subquery avanzada)
 router.get('/con-ventas', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -29,46 +28,40 @@ router.get('/con-ventas', async (req, res) => {
   }
 });
 
-// POST crear cliente
+// POST crear cliente (ORM)
 router.post('/', async (req, res) => {
   const { nombre, correo } = req.body;
   try {
-    const result = await pool.query(
-      `INSERT INTO cliente (nombre, correo)
-       VALUES ($1, $2) RETURNING *`,
-      [nombre, correo]
-    );
-    res.status(201).json(result.rows[0]);
+    const cliente = await Cliente.create({ nombre, correo });
+    res.status(201).json(cliente);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT actualizar cliente
+// PUT actualizar cliente (ORM)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, correo } = req.body;
   try {
-    const result = await pool.query(
-      `UPDATE cliente SET nombre=$1, correo=$2
-       WHERE id_cliente=$3 RETURNING *`,
-      [nombre, correo, id]
+    const [updated] = await Cliente.update(
+      { nombre, correo },
+      { where: { id_cliente: id } }
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Cliente no encontrado' });
-    res.json(result.rows[0]);
+    if (!updated) return res.status(404).json({ error: 'Cliente no encontrado' });
+    const cliente = await Cliente.findByPk(id);
+    res.json(cliente);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE eliminar cliente
+// DELETE eliminar cliente (ORM)
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(
-      'DELETE FROM cliente WHERE id_cliente=$1 RETURNING *', [id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Cliente no encontrado' });
+    const deleted = await Cliente.destroy({ where: { id_cliente: id } });
+    if (!deleted) return res.status(404).json({ error: 'Cliente no encontrado' });
     res.json({ mensaje: 'Cliente eliminado' });
   } catch (err) {
     res.status(500).json({ error: err.message });

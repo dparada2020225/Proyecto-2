@@ -3,6 +3,7 @@ const cors = require('cors');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const pool = require('./db');
+const { sequelize } = require('./orm');
 
 const productosRouter = require('./routes/productos');
 const clientesRouter  = require('./routes/clientes');
@@ -40,5 +41,10 @@ app.use('/api/productos', productosRouter);
 app.use('/api/clientes',  clientesRouter);
 app.use('/api/ventas',    ventasRouter);
 app.use('/api/reportes',  reportesRouter);
+
+// Conectar ORM (sin sincronizar esquema — el DDL ya lo maneja Docker)
+sequelize.authenticate()
+  .then(() => console.log('Sequelize conectado'))
+  .catch(err => console.error('Error Sequelize:', err.message));
 
 app.listen(PORT, () => console.log(`Backend corriendo en puerto ${PORT}`));
