@@ -8,7 +8,7 @@ export const PERMISOS = {
   rol_admin:    { productos: 'full', clientes: 'full', ventas: 'full', reportes: true },
   rol_gerente:  { productos: 'edit', clientes: 'edit', ventas: 'read', reportes: true },
   rol_vendedor: { productos: 'read', clientes: 'read', ventas: 'full', reportes: false },
-  rol_cajero:   { productos: 'read', clientes: false,  ventas: 'read', reportes: true },
+  rol_cajero:   { productos: false,  clientes: false,  ventas: 'read', reportes: true },
   rol_consulta: { productos: 'read', clientes: 'read', ventas: 'read', reportes: true },
 }
 

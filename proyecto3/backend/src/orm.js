@@ -9,6 +9,10 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'postgres',
     logging: false,
+    define: {
+      freezeTableName: true, // evita que Sequelize pluralice los nombres de tabla
+      timestamps: false,
+    },
   }
 );
 

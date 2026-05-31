@@ -57,6 +57,12 @@ CREATE TABLE usuario (
 CREATE INDEX idx_producto_categoria ON producto(id_categoria);
 CREATE INDEX idx_venta_cliente      ON venta(id_cliente);
 
+CREATE VIEW reporte_ventas AS
+SELECT v.id_venta, SUM(d.cantidad * d.precio_unitario) AS total
+FROM venta v
+JOIN detalle_venta d ON v.id_venta = d.id_venta
+GROUP BY v.id_venta;
+
 -- =============================================
 -- ROLES EN EL DBMS
 -- =============================================
@@ -87,12 +93,6 @@ GRANT SELECT ON venta, detalle_venta, reporte_ventas, cliente, empleado, product
 
 -- rol_consulta: solo lectura en todas las tablas
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO rol_consulta;
-
-CREATE VIEW reporte_ventas AS
-SELECT v.id_venta, SUM(d.cantidad * d.precio_unitario) AS total
-FROM venta v
-JOIN detalle_venta d ON v.id_venta = d.id_venta
-GROUP BY v.id_venta;
 
 -- Usuarios de prueba (uno por rol) — contraseña = usuario + "123"
 -- admin123, gerente123, vendedor123, cajero123, consulta123
